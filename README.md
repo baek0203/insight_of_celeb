@@ -56,13 +56,6 @@ python -m src.mining.clustering \
     --domain interview
 ```
 
-### 3. Start API Server
-
-```bash
-uvicorn src.api.main:app --reload
-# Open http://localhost:8000
-```
-
 ## Project Structure
 
 ```

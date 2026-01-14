@@ -29,8 +29,10 @@ outputs/step3/core_keyword/core_keyword_**/
 
 outputs/**/core_keyword_*/
 
-src/
 # umap PNG와 wordclouds는 자동으로 추적됨 (위에서 무시하지 않았으므로)
+
+# Backup
+*.zip
 
 # Environment
 .env

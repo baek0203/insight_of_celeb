@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtitle Intelligence Playground</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <div class="page">
+        <header>
+            <h1>Subtitle Intelligence Playground</h1>
+            <p>Paste a YouTube link to fetch captions and experiment with the upcoming LLM assistant.</p>
+        </header>
+        <main>
+            <section class="form-card">
+                <form method="post" action="/" class="form-row">
+                    <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." value="{{ youtube_url or '' }}" required>
+                    <input type="text" name="domain" placeholder="domain (optional)" value="{{ domain or '' }}">
+                    <button type="submit">Load Video</button>
+                </form>
+                {% if error %}
+                    <p style="color:#dc2626; margin-top:0.75rem;">{{ error }}</p>
+                {% endif %}
+            </section>
+
+            <section class="layout">
+                <div class="player">
+                    {% if video_id %}
+                        <iframe src="https://www.youtube.com/embed/{{ video_id }}" allowfullscreen></iframe>
+                    {% else %}
+                        <div class="placeholder">
+                            Submit a YouTube link to preview the video.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="chat" data-domain="{{ domain or '' }}" data-video="{{ video_id or '' }}">
+                    <h2>LLM Assistant</h2>
+                    <div id="chatLog" class="chat-log">
+                        {% if not video_id %}
+                            <div class="message bot">Once a video is loaded, ask questions about its content. Answers will include timestamps in the future release.</div>
+                        {% endif %}
+                    </div>
+                    <div class="chat-input">
+                        <input id="questionInput" type="text" placeholder="Ask about the video segment..." {% if not video_id %}disabled{% endif %}>
+                        <button id="askButton" type="button" {% if not video_id %}disabled{% endif %}>Send</button>
+                    </div>
+                    {% if not video_id %}
+                        <p style="margin-top:0.75rem; color:#64748b; font-size:0.9rem;">LLM backend is not connected yet. The chat will echo placeholder responses.</p>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const askButton = document.getElementById('askButton');
+        const questionInput = document.getElementById('questionInput');
+        const chatLog = document.getElementById('chatLog');
+        const chatContainer = document.querySelector('.chat');
+
+        async function sendQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            appendMessage('user', question);
+            questionInput.value = '';
+            askButton.disabled = true;
+
+            try {
+                const payload = {
+                    question,
+                    domain: chatContainer.dataset.domain || null,
+                    video_id: chatContainer.dataset.video || null,
+                };
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                appendMessage('bot', data.message || 'No response received.');
+            } catch (error) {
+                appendMessage('bot', 'Error communicating with the backend.');
+            } finally {
+                askButton.disabled = false;
+                questionInput.focus();
+            }
+        }
+
+        function appendMessage(role, text) {
+            const message = document.createElement('div');
+            message.className = `message ${role}`;
+            message.textContent = text;
+            chatLog.appendChild(message);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        if (askButton) {
+            askButton.addEventListener('click', sendQuestion);
+            questionInput?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    sendQuestion();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,94 +1,99 @@
-# configs/config.yaml
-experiment_name: subtitle-frequency-analysis
+# Insight Extractor Configuration
+# ════════════════════════════════════════════════════════════════
 
-# ────────────────────────────────────────────
+experiment_name: insight-extractor
+
+# ────────────────────────────────────────────────────────────────
+# Domain Configuration
+# ────────────────────────────────────────────────────────────────
+# Set active domain: interview, startup, commencement
+domain: interview
+
+domains:
+  interview:
+    raw_dir: data/raw/interview
+    clean_dir: data/clean/per_video/interview
+    split_dir: data/split/interview
+    output_dir: outputs/interview
+  startup:
+    raw_dir: data/raw/startup
+    clean_dir: data/clean/per_video/startup
+    split_dir: data/split/startup_nltk
+    output_dir: outputs/startup
+  commencement:
+    raw_dir: data/raw/commencement
+    clean_dir: data/clean/per_video/commencement
+    split_dir: data/split/commencement
+    output_dir: outputs/commencement
+
+# ────────────────────────────────────────────────────────────────
 # Data Configuration
-# ────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────
 data:
-  clean_dir: "data/clean/per_video"
-  domain: "interview"
-  text_column: "text"
+  text_column: text
   min_length: 10
   max_length: 150
+  min_words: 4
 
-# Input/Output
-input_pattern: "data/clean/per_video/interview/*.en.csv"
-output_dir: "data/clean/semantic_simple/interview"
-
-# Hugging Face pipeline
-hf_model: "google/flan-t5-small"
-hf_max_length: 256
-hf_do_sample: false
-
-# Splitting
-min_words: 4
-split_regex: "(?<=[.!?])\\s+"
-
-# 시행착오 사용되지 않음 > 처음에는 
-step3:
-  tfidf:
-    max_features: 5000
-    ngram_range: [3, 5]
-    min_df: 2
-    max_df: 0.9
-  top_n: 10000
-
-cluster:
-  umap:
-    n_neighbors: 15          # 기본 10
-    min_dist: 0.1            # 기본 0.1
-    metric: "cosine"
-    random_state: 42
-  hdbscan:
-    min_cluster_size: 8     # 기본 5
-    cluster_selection_epsilon: 0.1
-    metric: "euclidean"
-    cluster_selection_method: "eom"
-  filtering:
-    min_frequency: 2         # 최소 빈도 필터
-
+# ────────────────────────────────────────────────────────────────
+# Embedding Configuration
+# ────────────────────────────────────────────────────────────────
 embedding:
-  model_name: "all-mpnet-base-v2"
-  use_tfidf_weight: true
+  model_name: all-MiniLM-L6-v2
+  device: cuda
+  batch_size: 64
 
-pca:
-  n_components: 80
-  random_state: 42
-
-hdbscan:
-  min_cluster_size: 10
-  min_samples: 5
-  cluster_selection_epsilon: 0.1
-  cluster_selection_method: "eom"
-  metric: "euclidean"
-
+# ────────────────────────────────────────────────────────────────
+# UMAP Configuration
+# ────────────────────────────────────────────────────────────────
 umap:
-  n_neighbors: 10
+  n_neighbors: 25
+  n_components: 2
   min_dist: 0.1
+  metric: cosine
   random_state: 42
 
+# ────────────────────────────────────────────────────────────────
+# HDBSCAN Configuration
+# ────────────────────────────────────────────────────────────────
+hdbscan:
+  min_cluster_size: 12
+  min_samples: 5
+  metric: euclidean
+  cluster_selection_method: eom
+
+# ────────────────────────────────────────────────────────────────
+# Cluster Merging Configuration
+# ────────────────────────────────────────────────────────────────
+clustering:
+  target_min_clusters: 15
+  target_max_clusters: 20
+  merge_small_threshold: 10
+  merge_medium_threshold: 25
+  merge_large_threshold: 35
+  noise_reassign_threshold: 0.10
+
+# ────────────────────────────────────────────────────────────────
+# LLM Configuration
+# ────────────────────────────────────────────────────────────────
+llm:
+  model_id: google/gemma-2-9b-it
+  max_new_tokens: 512
+  batch_size: 4
+  do_sample: false
+
+# ────────────────────────────────────────────────────────────────
+# Preprocessing Configuration
+# ────────────────────────────────────────────────────────────────
+preprocessing:
+  split_regex: "(?<=[.!?])\\s+"
+  use_punctuation_restoration: true
+  granularity: medium  # fine, medium, coarse
+
+# ────────────────────────────────────────────────────────────────
+# Visualization Configuration
+# ────────────────────────────────────────────────────────────────
 plot:
-  figsize: [10, 8]
+  figsize: [14, 11]
   dpi: 300
-
-# ────────────────────────────────────────────
-# Clustering (Step 4)
-# ────────────────────────────────────────────
-step4:
-  embedding:
-    model_name: "sentence-transformers/all-MiniLM-L6-v2"
-    batch_size: 64
-  clustering:
-    min_cluster_size: 10
-    min_samples: 5
-    metric: "euclidean"
-    cluster_selection_method: "eom"
-
-# ────────────────────────────────────────────
-# Broken English (Step 5)
-# ────────────────────────────────────────────
-step5:
-  broken_english:
-    model_name: "textattack/bert-base-uncased-CoLA"
-    threshold: 0.5
-    batch_size: 32
+  cmap: tab20

@@ -1,4 +1,4 @@
-# Insight Extractor
+# Insight Clustering
 
 An NLP pipeline that automatically extracts key insights from YouTube subtitles.
 
